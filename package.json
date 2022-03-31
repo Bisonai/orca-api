@@ -1,0 +1,22 @@
+{
+  "name": "orca-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@orca-so/sdk": "^1.2.23",
+    "@solana/web3.js": "^1.37.0",
+    "decimal.js": "^10.3.1",
+    "mz": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/mz": "^2.7.4",
+    "@types/node": "^17.0.23"
+  }
+}
