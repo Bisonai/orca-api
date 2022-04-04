@@ -1,7 +1,10 @@
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { readFile, writeFile } from "mz/fs";
 import { Connection, Keypair } from "@solana/web3.js";
-import { Orca, OrcaU64, OrcaPool, OrcaPoolToken, getOrca, OrcaFarmConfig, OrcaPoolConfig } from "@orca-so/sdk";
+import { Network, Orca, OrcaU64, OrcaPool, OrcaPoolToken, getOrca, OrcaFarmConfig, OrcaPoolConfig } from "@orca-so/sdk";
 import Decimal from "decimal.js";
+import { argv } from 'process';
+// import { process } from 'process';
 
 
 // Missing APY, volume
@@ -17,44 +20,51 @@ import Decimal from "decimal.js";
    keypair = await loadKeypair();
 */
 
-const getPools: () => string[] = function () {
+async function getBalance(
+  connection: Connection,
+  keypair: Keypair,
+): Promise<number> {
+  return await connection.getBalance(keypair.publicKey);
+};
+
+function getPools(): string[] {
   return Object.keys(OrcaPoolConfig);
 };
 
-const getPoolTokens: () => string[] = function () {
+function getPoolTokens(): string[] {
   const pools = getPools();
   const tokens = new Set(pools.flatMap(p => p.split("_")));
   return Array.from(tokens.values());
 };
 
-const getFarms: () => string[] = function () {
+function getFarms(): string[] {
   return Object.keys(OrcaFarmConfig);
 };
 
-const getFarmTokens: () => string[] = function () {
+function getFarmTokens(): string[] {
   const farms = getFarms();
   const tokens = new Set(farms.flatMap(p => p.split("_").slice(0, 2)));
   // FIXME keep information about aqua farms and double dips
   return Array.from(tokens.values());
 };
 
-const generateKeypair: () => Keypair = function () {
+function generateKeypair(): Keypair {
   return Keypair.generate();
 };
 
-const saveKeypair: (keypair: Keypair, keypairPath?: string) => void = async function (
-  keypair,
-  keypairPath = "secret-key.json",
+async function saveKeypair(
+  keypair: Keypair,
+  keypairPath: "secret-key.json",
 ) {
   const secretKey = "[" + keypair.secretKey.toString() + "]";
   await writeFile(keypairPath, secretKey, {
     encoding: "utf8",
   });
-}
+};
 
-const loadKeypair: (secretkeyPath?: string) => Promise<Keypair> = async function (
-  secretkeyPath = "secret-key.json",
-) {
+async function loadKeypair(
+  secretkeyPath: string = "secret-key.json",
+): Promise<Keypair> {
   const secretKeyString = await readFile(secretkeyPath, {
     encoding: "utf8",
   });
@@ -63,13 +73,12 @@ const loadKeypair: (secretkeyPath?: string) => Promise<Keypair> = async function
   return owner;
 };
 
-const poolDeposit: (keypair: Keypair, pool: OrcaPool, tokenAAmount: Decimal | OrcaU64, tokenBAmount: Decimal | OrcaU64) => Promise<void> = async function (
-  keypair,
-  pool,
-  tokenAAmount,
-  tokenBAmount,
+async function poolDeposit(
+  keypair: Keypair,
+  pool: OrcaPool,
+  tokenAAmount: Decimal | OrcaU64,
+  tokenBAmount: Decimal | OrcaU64,
 ) {
-
   const slippage = new Decimal(0.01); // FIXME
   const { maxTokenAIn, maxTokenBIn, minPoolTokenAmountOut } = await pool.getDepositQuote(
     tokenAAmount,
@@ -92,24 +101,23 @@ const poolDeposit: (keypair: Keypair, pool: OrcaPool, tokenAAmount: Decimal | Or
   console.log(`Pool deposited ${poolDepositTxId} \n`);
 };
 
-const swap: (keypair: Keypair, pool: OrcaPool, tokenFrom: OrcaPoolToken, tokenFromAmount: Decimal, tokenToAmount: Decimal) => Promise<void> = async function (
-  keypair,
-  pool,
-  tokenFrom,
-  tokenFromAmount,
-  tokenToAmount,
-
+async function swap(
+  keypair: Keypair,
+  pool: OrcaPool,
+  tokenFrom: OrcaPoolToken,
+  tokenFromAmount: Decimal,
+  tokenToAmount: Decimal,
 ) {
   const swapPayload = await pool.swap(keypair, tokenFrom, tokenFromAmount, tokenToAmount);
   const swapTxId = await swapPayload.execute();
   console.log(`Swapped: ${swapTxId} \n`);
 };
 
-const farmDeposit: (connection: Orca, farmId: OrcaFarmConfig, keypair: Keypair, pool: OrcaPool) => Promise<void> = async function(
-  connection,
-  farmId,
-  keypair,
-  pool,
+async function farmDeposit(
+  connection: Orca,
+  farmId: OrcaFarmConfig,
+  keypair: Keypair,
+  pool: OrcaPool,
 ) {
   // Note 1: for double dip, repeat step 5 but with the double dip farm
   // Note 2: to harvest reward, orcaSolFarm.harvest(owner)
@@ -126,10 +134,10 @@ const farmDeposit: (connection: Orca, farmId: OrcaFarmConfig, keypair: Keypair, 
   console.log(`Farm deposited ${farmDepositTxId} "\n`);
 };
 
-const farmWithDraw: (connection: Orca, farmId: OrcaFarmConfig, keypair: Keypair) => Promise<void> = async function (
-  connection,
-  farmId,
-  keypair,
+async function farmWithDraw(
+  connection: Orca,
+  farmId: OrcaFarmConfig,
+  keypair: Keypair,
 ) {
   const farm = connection.getFarm(farmId);
   const farmBalance = await farm.getFarmBalance(keypair.publicKey); // withdraw the entire balance
@@ -138,9 +146,9 @@ const farmWithDraw: (connection: Orca, farmId: OrcaFarmConfig, keypair: Keypair)
   console.log(`Farm withdrawn ${farmWithdrawTxId} \n`);
 };
 
-const poolWithdraw: (pool: OrcaPool, keypair: Keypair) => Promise<void> = async function (
-  pool,
-  keypair,
+async function poolWithdraw(
+  pool: OrcaPool,
+  keypair: Keypair,
 ) {
   const withdrawTokenAmount = await pool.getLPBalance(keypair.publicKey);
   const withdrawTokenMint = pool.getPoolTokenMint();
@@ -165,23 +173,97 @@ const poolWithdraw: (pool: OrcaPool, keypair: Keypair) => Promise<void> = async 
 };
 
 const main = async () => {
+  let rpcEndpoint;
+  let network;
+
+  const networkName = argv[2];
+
+  if (networkName == "mainnet") {
+    rpcEndpoint = "https://api.mainnet-beta.solana.com";
+    network = Network.MAINNET;
+  }
+  else {
+    rpcEndpoint = "https://api.devnet.solana.com";
+    network = Network.DEVNET;
+  }
+
+  console.log(network);
+
   const connection = new Connection(
-    "https://api.mainnet-beta.solana.com",
+    rpcEndpoint,
     "singleGossip",
   );
-
-  const orca = getOrca(connection);
+  const orca = getOrca(connection, network);
 
   // ACCOUNT
-  // const keypair = await loadKeypair();
-  // console.log(keypair);
+  const keypair = await loadKeypair();
+  const publicKey = keypair.publicKey.toBase58();
+  console.log(`public ${publicKey}`);
+  let balance = await connection.getBalance(keypair.publicKey);
+  console.log(`balance: ${balance}`);
 
   try {
-    const farmTokens = getFarmTokens();
-    console.log(farmTokens);
+    const pool = orca.getPool(OrcaPoolConfig.ORCA_SOL);
+    // want to swap SOL to ORCA
+    // Swap 0.1 SOL for at least 0.04352 ORCA
+    // Actually 0.10205313299999996 SOL for 0.043564 ORCA
+    // TODO save timestamp of transaction
+    /*
+    const solToken = pool.getTokenB();
+    const solAmount = new Decimal(0.1);
+    // const slippage = defaultSlippagePercentage;
+    const quote = await pool.getQuote(
+      solToken,
+      solAmount,
+      // slippage,
+    );
+    const orcaAmount = quote.getMinOutputAmount();
+    console.log(`Swap ${solAmount.toString()} SOL for at least ${orcaAmount.toNumber()} ORCA`);
 
-    const poolTokens = getPoolTokens();
-    console.log(poolTokens);
+    const swapPayload = await pool.swap(
+      keypair,
+      solToken,
+      solAmount,
+      orcaAmount,
+    );
+    console.log(swapPayload);
+    const swapTxId = await swapPayload.execute();
+    console.log(`Swapped ${swapTxId} \n`);
+    */
+
+    // want to deposit SOL and ORCA
+    // const orcaAmount = new Decimal(0.043564);
+    // const solAmount = new Decimal(0.10205313299999996);
+    // const { maxTokenAIn, maxTokenBIn, minPoolTokenAmountOut } = await pool.getDepositQuote(
+    //   orcaAmount,
+    //   solAmount
+    // );
+    // console.log(
+    //   `Deposit at most ${maxTokenBIn.toNumber()} SOL and ${maxTokenAIn.toNumber()} ORCA, for at least ${minPoolTokenAmountOut.toNumber()} LP tokens`
+    // );
+
+    const accounts = await connection.getParsedProgramAccounts(
+      TOKEN_PROGRAM_ID,
+      {
+        filters: [
+          {
+            dataSize: 165, // number of bytes
+          },
+          {
+            memcmp: {
+              offset: 32, // number of bytes
+              bytes: publicKey, // base58 encoded string
+            },
+          },
+        ],
+      }
+    );
+
+    console.log(accounts);
+
+    const a = accounts[0].account.data;
+    console.log(a);
+    // console.log(a.parsed);
 
   } catch (err) {
     console.warn(err);
