@@ -1,9 +1,10 @@
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { readFile, writeFile } from "mz/fs";
-import { Connection, Keypair } from "@solana/web3.js";
-import { Network, Orca, OrcaU64, OrcaPool, OrcaPoolToken, getOrca, OrcaFarmConfig, OrcaPoolConfig } from "@orca-so/sdk";
+import { ParsedAccountData, Connection, Keypair } from "@solana/web3.js";
+import {  Network, Orca, OrcaU64, OrcaPool, OrcaPoolToken, getOrca, OrcaFarmConfig, OrcaPoolConfig } from "@orca-so/sdk";
 import Decimal from "decimal.js";
 import { argv } from 'process';
+import { createRepl, create } from "ts-node";
 // import { process } from 'process';
 
 
@@ -20,37 +21,106 @@ import { argv } from 'process';
    keypair = await loadKeypair();
 */
 
+type SPLPortfolio = {
+  "mintContract": string;
+  "amount": string;
+  "decimals": number;
+}
+
+type Portfolio = {
+  "balance": number,
+  "splToken": SPLPortfolio[],
+};
+
+// class Portfolio {
+//   greeting: string;
+
+//   constructor(message: string) {
+//     this.greeting = message;
+//   }
+
+//   greet() {
+//     return "Hello, " + this.greeting;
+//   }
+// }
+
+async function getPortfolio(
+  connection: Connection,
+  keypair: Keypair,
+) {
+  const accounts = await connection.getParsedProgramAccounts(
+    TOKEN_PROGRAM_ID,
+    {
+      filters: [
+        {
+          dataSize: 165,
+        },
+        {
+          memcmp: {
+            offset: 32,
+            bytes: keypair.publicKey.toBase58(),
+          },
+        },
+      ],
+    }
+  );
+
+  assert(accounts.length == 1, "Expect just single account.");
+
+  const account: any = accounts[0].account.data;  // FIXME any
+
+  const mintContract = account.parsed.info.mint;
+  const amount = account.parsed.info.tokenAmount.amount;
+  const decimals = account.parsed.info.tokenAmount.decimals;
+
+  var portfolio: Portfolio = {
+    "balance": await getBalance(connection, keypair),
+    "splToken": [
+      {
+        "mintContract": mintContract,
+        "amount": amount,
+        "decimals": decimals,
+      }],
+  };
+
+  console.log(portfolio);
+}
+
+function toSol(amount: number, decimals: number): number {
+  return amount * (10**(-decimals));
+}
+
 async function getBalance(
   connection: Connection,
   keypair: Keypair,
 ): Promise<number> {
   return await connection.getBalance(keypair.publicKey);
-};
+}
 
 function getPools(): string[] {
   return Object.keys(OrcaPoolConfig);
-};
+}
 
 function getPoolTokens(): string[] {
   const pools = getPools();
   const tokens = new Set(pools.flatMap(p => p.split("_")));
   return Array.from(tokens.values());
-};
+}
 
 function getFarms(): string[] {
   return Object.keys(OrcaFarmConfig);
-};
+}
 
 function getFarmTokens(): string[] {
   const farms = getFarms();
   const tokens = new Set(farms.flatMap(p => p.split("_").slice(0, 2)));
   // FIXME keep information about aqua farms and double dips
   return Array.from(tokens.values());
-};
+}
 
 function generateKeypair(): Keypair {
   return Keypair.generate();
-};
+}
 
 async function saveKeypair(
   keypair: Keypair,
@@ -60,7 +130,7 @@ async function saveKeypair(
   await writeFile(keypairPath, secretKey, {
     encoding: "utf8",
   });
-};
+}
 
 async function loadKeypair(
   secretkeyPath: string = "secret-key.json",
@@ -71,7 +141,7 @@ async function loadKeypair(
   const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
   const owner = Keypair.fromSecretKey(secretKey);
   return owner;
-};
+}
 
 async function poolDeposit(
   keypair: Keypair,
@@ -99,7 +169,7 @@ async function poolDeposit(
 
   const poolDepositTxId = await poolDepositPayload.execute();
   console.log(`Pool deposited ${poolDepositTxId} \n`);
-};
+}
 
 async function swap(
   keypair: Keypair,
@@ -111,7 +181,7 @@ async function swap(
   const swapPayload = await pool.swap(keypair, tokenFrom, tokenFromAmount, tokenToAmount);
   const swapTxId = await swapPayload.execute();
   console.log(`Swapped: ${swapTxId} \n`);
-};
+}
 
 async function farmDeposit(
   connection: Orca,
@@ -132,7 +202,7 @@ async function farmDeposit(
   const farmDepositTxId = await farmDepositPayload.execute();
 
   console.log(`Farm deposited ${farmDepositTxId} "\n`);
-};
+}
 
 async function farmWithDraw(
   connection: Orca,
@@ -144,7 +214,7 @@ async function farmWithDraw(
   const farmWithdrawPayload = await farm.withdraw(keypair, farmBalance);
   const farmWithdrawTxId = await farmWithdrawPayload.execute();
   console.log(`Farm withdrawn ${farmWithdrawTxId} \n`);
-};
+}
 
 async function poolWithdraw(
   pool: OrcaPool,
@@ -170,7 +240,14 @@ async function poolWithdraw(
 
   const poolWithdrawTxId = await poolWithdrawPayload.execute();
   console.log(`Pool withdrawn poolWithdrawTxId \n`);
-};
+}
+
+function assert(
+  condition: unknown,
+  message: string = "",
+): asserts condition {
+  if (!condition) throw new Error(message);
+}
 
 const main = async () => {
   let rpcEndpoint;
@@ -199,8 +276,6 @@ const main = async () => {
   const keypair = await loadKeypair();
   const publicKey = keypair.publicKey.toBase58();
   console.log(`public ${publicKey}`);
-  let balance = await connection.getBalance(keypair.publicKey);
-  console.log(`balance: ${balance}`);
 
   try {
     const pool = orca.getPool(OrcaPoolConfig.ORCA_SOL);
@@ -242,28 +317,7 @@ const main = async () => {
     //   `Deposit at most ${maxTokenBIn.toNumber()} SOL and ${maxTokenAIn.toNumber()} ORCA, for at least ${minPoolTokenAmountOut.toNumber()} LP tokens`
     // );
 
-    const accounts = await connection.getParsedProgramAccounts(
-      TOKEN_PROGRAM_ID,
-      {
-        filters: [
-          {
-            dataSize: 165, // number of bytes
-          },
-          {
-            memcmp: {
-              offset: 32, // number of bytes
-              bytes: publicKey, // base58 encoded string
-            },
-          },
-        ],
-      }
-    );
-
-    console.log(accounts);
-
-    const a = accounts[0].account.data;
-    console.log(a);
-    // console.log(a.parsed);
+    getPortfolio(connection, keypair);
 
   } catch (err) {
     console.warn(err);
