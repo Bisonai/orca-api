@@ -32,18 +32,6 @@ type Portfolio = {
   "splToken": SPLPortfolio[],
 };
 
-// class Portfolio {
-//   greeting: string;
-
-//   constructor(message: string) {
-//     this.greeting = message;
-//   }
-
-//   greet() {
-//     return "Hello, " + this.greeting;
-//   }
-// }
-
 async function getPortfolio(
   connection: Connection,
   keypair: Keypair,
@@ -95,6 +83,33 @@ async function getBalance(
   keypair: Keypair,
 ): Promise<number> {
   return await connection.getBalance(keypair.publicKey);
+}
+
+function poolFromTokens(
+  tokenA: string,
+  tokenB: string,
+): string {
+  return `${tokenA}_${tokenB}`;
+}
+
+function accessEnum(
+  enumObject: {[s: string]: string},
+  key: string,
+): undefined | string {
+  const keys = Object.keys(enumObject);
+
+  if (keys.find(x => x == key) == undefined)
+    return undefined;
+  else
+    return enumObject[key as keyof typeof enumObject];
+}
+
+function getPoolAddress(
+  tokenA: string,
+  tokenB: string,
+): undefined | string {
+  const pool_name: string = poolFromTokens(tokenA, tokenB);
+  return accessEnum(OrcaPoolConfig, pool_name);
 }
 
 function getPools(): string[] {
@@ -317,7 +332,15 @@ const main = async () => {
     //   `Deposit at most ${maxTokenBIn.toNumber()} SOL and ${maxTokenAIn.toNumber()} ORCA, for at least ${minPoolTokenAmountOut.toNumber()} LP tokens`
     // );
 
-    getPortfolio(connection, keypair);
+    const tokenA = "ORCA";
+    const tokenB = "USDC";
+
+    // findPool(tokenA, tokenB);
+
+    const poolAddress = getPoolAddress(tokenA, tokenB);
+    console.log(poolAddress);
+
+    // getPortfolio(connection, keypair);
 
   } catch (err) {
     console.warn(err);
