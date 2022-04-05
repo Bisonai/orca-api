@@ -5,6 +5,7 @@ import {  Network, Orca, OrcaU64, OrcaPool, OrcaPoolToken, getOrca, OrcaFarmConf
 import Decimal from "decimal.js";
 import { argv } from 'process';
 import { createRepl, create } from "ts-node";
+import { TokenListProvider, TokenInfo } from '@solana/spl-token-registry';
 // import { process } from 'process';
 
 // TODO semicolon?
@@ -34,7 +35,7 @@ interface SwapQuote {
 }
 
 interface SPLPortfolio {
-  mintContract: string;
+  mintAddress: string;
   amount: string;
   decimals: number;
 }
@@ -95,12 +96,12 @@ async function getPortfolio(
 
   for (let acc of accounts) {
     const account: any = acc.account.data;  // FIXME any
-    const mintContract = account.parsed.info.mint;
+    const mintAddress = account.parsed.info.mint;
     const amount = account.parsed.info.tokenAmount.amount;
     const decimals = account.parsed.info.tokenAmount.decimals;
 
     splToken.push({
-      mintContract,
+      mintAddress,
       amount,
       decimals,
     });
@@ -418,10 +419,20 @@ const main = async () => {
     const tokenA = "SOL";
     const poolName = getPoolName(tokenA, tokenB);
 
-    // if (poolName) {
-      // const poolAddress = getPoolAddress(poolName);
-      // console.log(`address ${poolAddress}`);
-      // const pool = orca.getPool(poolAddress);
+    if (poolName) {
+      const poolAddress = getPoolAddress(poolName);
+      console.log(`address ${poolAddress}`);
+      const pool = orca.getPool(poolAddress);
+
+      // console.log(pool.getTokenA().addr);
+      // console.log(pool.getTokenB().addr);
+
+      // new TokenListProvider().resolve().then((tokens) => {
+      //   const tokenList = tokens.filterByClusterSlug(Network.DEVNET).getList();
+      //   for (let tl of tokenList) {
+      //     console.log(`${tl.address} ${tl.symbol}`);
+      //   }
+      // });
 
       // const tokenFrom = pool.getTokenB();
       // const tokenFromAmount = new Decimal(0.1);
@@ -445,7 +456,7 @@ const main = async () => {
 
       // const swapTxId = await swapTxPayload.execute();
       // console.log(`Swapped ${swapTxId} \n`);
-    // }
+    }
 
     const portfolio = await getPortfolio(connection, keypair);
     console.log(portfolio);
