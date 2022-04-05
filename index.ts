@@ -51,10 +51,27 @@ function assert(
   if (!condition) throw new Error(message);
 }
 
+async function swap(
+  pool: OrcaPool,
+  keypair: Keypair,
+  swapQuote: SwapQuote,
+) {
+  const swapTx = await pool.swap(
+    keypair,
+    swapQuote.from.token,
+    swapQuote.from.amount,
+    swapQuote.to.amount,
+  );
+
+  console.log(swapTx);
+
+  return swapTx;
+}
+
 async function getPortfolio(
   connection: Connection,
   keypair: Keypair,
-) {
+): Promise<Portfolio> {
   const accounts = await connection.getParsedProgramAccounts(
     TOKEN_PROGRAM_ID,
     {
@@ -72,25 +89,29 @@ async function getPortfolio(
     }
   );
 
-  assert(accounts.length == 1, "Expect just single account.");
+  const balance = await getBalance(connection, keypair);
 
-  const account: any = accounts[0].account.data;  // FIXME any
+  let splToken: SPLPortfolio[] = [];
 
-  const mintContract = account.parsed.info.mint;
-  const amount = account.parsed.info.tokenAmount.amount;
-  const decimals = account.parsed.info.tokenAmount.decimals;
+  for (let acc of accounts) {
+    const account: any = acc.account.data;  // FIXME any
+    const mintContract = account.parsed.info.mint;
+    const amount = account.parsed.info.tokenAmount.amount;
+    const decimals = account.parsed.info.tokenAmount.decimals;
 
-  var portfolio: Portfolio = {
-    "balance": await getBalance(connection, keypair),
-    "splToken": [
-      {
-        "mintContract": mintContract,
-        "amount": amount,
-        "decimals": decimals,
-      }],
+    splToken.push({
+      mintContract,
+      amount,
+      decimals,
+    });
+  }
+
+  const portfolio: Portfolio = {
+    balance,
+    splToken,
   };
 
-  console.log(portfolio);
+  return portfolio;
 }
 
 function toSol(amount: number, decimals: number): number {
@@ -117,6 +138,21 @@ function poolNameExist(pool_name: string): boolean {
     return false;
   else
     return true;
+}
+
+function getPoolName(
+  tokenA: string,
+  tokenB: string,
+): string | undefined {
+  const poolAB = poolFromTokens(tokenA, tokenB);
+  const poolBA = poolFromTokens(tokenB, tokenA);
+
+  if (poolNameExist(poolAB))
+    return poolAB;
+  else if (poolNameExist(poolBA))
+    return poolBA;
+  else
+    return undefined;
 }
 
 function getPoolAddress(
@@ -244,22 +280,6 @@ function printSwapQuote(swapQuote: SwapQuote) {
     `${swapQuote.to.amount.toNumber()}`,
     `${swapQuote.to.token.tag}`
   );
-}
-
-async function swap(
-  keypair: Keypair,
-  pool: OrcaPool,
-  tokenFrom: OrcaPoolToken,
-  tokenFromAmount: Decimal,
-  tokenToAmount: Decimal,
-  execute: boolean = false,
-) {
-  const swapPayload = await pool.swap(keypair, tokenFrom, tokenFromAmount, tokenToAmount);
-
-  if (execute) {
-    const swapTxId = await swapPayload.execute();
-    console.log(`Swapped: ${swapTxId} \n`);
-  }
 }
 
 async function farmDeposit(
@@ -391,74 +411,44 @@ const main = async () => {
     //   `Deposit at most ${maxTokenBIn.toNumber()} SOL and ${maxTokenAIn.toNumber()} ORCA, for at least ${minPoolTokenAmountOut.toNumber()} LP tokens`
     // );
 
+    // const tokenA = "ETH";
+    // const tokenB = "SOL";
+
+    const tokenB = "ETH";
     const tokenA = "SOL";
-    const tokenB = "USDC";
+    const poolName = getPoolName(tokenA, tokenB);
 
-    // const poolAddress = getPoolAddress(tokenA, tokenB);
-    // console.log(`pool address: ${poolAddress}`);
+    // if (poolName) {
+      // const poolAddress = getPoolAddress(poolName);
+      // console.log(`address ${poolAddress}`);
+      // const pool = orca.getPool(poolAddress);
 
-    // console.log(typeof(OrcaPoolConfig.ORCA_SOL));
+      // const tokenFrom = pool.getTokenB();
+      // const tokenFromAmount = new Decimal(0.1);
+      // const swapQuote = await getSwapQuote(
+      //   pool,
+      //   tokenFrom,
+      //   tokenFromAmount,
+      // );
 
-    const poolName = poolFromTokens(tokenA, tokenB);
-    if (poolNameExist(poolName)) {
-      const poolAddress = getPoolAddress(poolName);
-      console.log(`address ${poolAddress}`);
-      const pool = orca.getPool(poolAddress);
-
-      const tokenAAmount = new Decimal(0.1);
-      const swapQuote = await getSwapQuote(
-        pool,
-        pool.getTokenA(),
-        tokenAAmount,
-      );
-
-      printSwapQuote(swapQuote);
+      // printSwapQuote(swapQuote);
 
       // Do I like the quote? Yes!
 
-      // const swapPayload = await pool.swap(
-      //   keypair,
-      //   solToken,
-      //   solAmount,
-      //   orcaAmount,
-      // );
-
-      // console.log(swapPayload);
-      // const swapTxId = await swapPayload.execute();
-      // console.log(`Swapped ${swapTxId} \n`);
-
-      // console.log(pool.getTokenA());
-
-      // const toAmount = new Decimal();
-      // swap(
-      //   keypair,
+      // const swapTxPayload = await swap(
       //   pool,
-      //   pool.getTokenA(),
-      //   fromAmount,
-      //   toAmount,
-      //   execute=false,
+      //   keypair,
+      //   swapQuote,
       // );
 
-    // const solToken = pool.getTokenB();
-    // const solAmount = new Decimal(0.1);
-    // const quote = await pool.getQuote(
-    //   solToken,
-    //   solAmount,
-    // );
-    // const orcaAmount = quote.getMinOutputAmount();
-    // console.log(`Swap ${solAmount.toString()} SOL for at least ${orcaAmount.toNumber()} ORCA`);
+      // console.log(swapTxPayload);
 
-    // const swapPayload = await pool.swap(
-    //   keypair,
-    //   solToken,
-    //   solAmount,
-    //   orcaAmount,
-    // );
-    // console.log(swapPayload);
-    // const swapTxId = await swapPayload.execute();
+      // const swapTxId = await swapTxPayload.execute();
+      // console.log(`Swapped ${swapTxId} \n`);
+    // }
 
-      // getPortfolio(connection, keypair);
-    }
+    const portfolio = await getPortfolio(connection, keypair);
+    console.log(portfolio);
 
   } catch (err) {
     console.warn(err);
