@@ -48,6 +48,24 @@ async function getAllTokens(network: Network) {
   });
 }
 
+function getTokenFromPool(
+  pool: OrcaPool,
+  token: string,
+): OrcaPoolToken {
+  const tokenA = pool.getTokenA();
+  const tokenB = pool.getTokenB();
+
+  const tokenATag = tokenA.tag;
+  const tokenBTag = tokenB.tag;
+
+  if (token == tokenATag)
+    return tokenA;
+  else if (token == tokenBTag)
+    return tokenB;
+  else
+    throw new Error(`Token ${token} is not part of pool ${pool}.`);
+}
+
 function assert(
   condition: unknown,
   message: string = "",
@@ -376,34 +394,6 @@ const main = async () => {
   console.log(`public key: ${publicKey}`);
 
   try {
-    // const pool = orca.getPool(OrcaPoolConfig.ORCA_SOL);
-    // want to swap SOL to ORCA
-    // Swap 0.1 SOL for at least 0.04352 ORCA
-    // Actually 0.10205313299999996 SOL for 0.043564 ORCA
-    // TODO save timestamp of transaction
-    /*
-    const solToken = pool.getTokenB();
-    const solAmount = new Decimal(0.1);
-    // const slippage = defaultSlippagePercentage;
-    const quote = await pool.getQuote(
-      solToken,
-      solAmount,
-      // slippage,
-    );
-    const orcaAmount = quote.getMinOutputAmount();
-    console.log(`Swap ${solAmount.toString()} SOL for at least ${orcaAmount.toNumber()} ORCA`);
-
-    const swapPayload = await pool.swap(
-      keypair,
-      solToken,
-      solAmount,
-      orcaAmount,
-    );
-    console.log(swapPayload);
-    const swapTxId = await swapPayload.execute();
-    console.log(`Swapped ${swapTxId} \n`);
-    */
-
     // want to deposit SOL and ORCA
     // const orcaAmount = new Decimal(0.043564);
     // const solAmount = new Decimal(0.10205313299999996);
@@ -414,50 +404,6 @@ const main = async () => {
     // console.log(
     //   `Deposit at most ${maxTokenBIn.toNumber()} SOL and ${maxTokenAIn.toNumber()} ORCA, for at least ${minPoolTokenAmountOut.toNumber()} LP tokens`
     // );
-
-    // const tokenA = "ETH";
-    // const tokenB = "SOL";
-
-    const tokenB = "ETH";
-    const tokenA = "SOL";
-    const poolName = getPoolName(tokenA, tokenB);
-
-    if (poolName) {
-      // const poolAddress = getPoolAddress(poolName);
-      // console.log(`address ${poolAddress}`);
-      // const pool = orca.getPool(poolAddress);
-
-      // const tokenFrom = pool.getTokenB();
-      // const tokenFromAmount = new Decimal(0.1);
-      // const swapQuote = await getSwapQuote(
-      //   pool,
-      //   tokenFrom,
-      //   tokenFromAmount,
-      // );
-
-      // printSwapQuote(swapQuote);
-
-      // Do I like the quote? Yes!
-
-      // const swapTxPayload = await swap(
-      //   pool,
-      //   keypair,
-      //   swapQuote,
-      // );
-
-      // console.log(swapTxPayload);
-
-      // const swapTxId = await swapTxPayload.execute();
-      // console.log(`Swapped ${swapTxId} \n`);
-    }
-
-    // const tokens = await new TokenListProvider().resolve();
-    // const tokenList = tokens.filterByClusterSlug(Network.DEVNET).getList();
-    // console.log(tokenList);
-
-    // const a = await new TokenListProvider().resolve().then((tokens) => {
-    //   return tokens.filterByClusterSlug(network).getList();
-    // });
 
     const portfolio = await getPortfolio(connection, keypair);
     console.log(portfolio);
