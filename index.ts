@@ -23,26 +23,25 @@ import { createRepl, create } from "ts-node";
    keypair = await loadKeypair();
 */
 
-type SwapQuote = {
-  "from": {
-    "token": OrcaPoolToken,
-    "amount": Decimal | OrcaU64,
-  },
-  "to": {
-    "token": OrcaPoolToken,
-    "amount": Decimal | OrcaU64,
-  }
+interface TokenQuote {
+  token: OrcaPoolToken;
+  amount: Decimal | OrcaU64;
 }
 
-type SPLPortfolio = {
-  "mintContract": string;
-  "amount": string;
-  "decimals": number;
+interface SwapQuote {
+  from: TokenQuote;
+  to: TokenQuote;
 }
 
-type Portfolio = {
-  "balance": number,
-  "splToken": SPLPortfolio[],
+interface SPLPortfolio {
+  mintContract: string;
+  amount: string;
+  decimals: number;
+}
+
+interface Portfolio {
+  balance: number;
+  splToken: SPLPortfolio[];
 }
 
 function assert(
@@ -407,9 +406,27 @@ const main = async () => {
       const pool = orca.getPool(poolAddress);
 
       const tokenAAmount = new Decimal(0.1);
-      const swapQuote = await getSwapQuote(pool, pool.getTokenA(), tokenAAmount);
+      const swapQuote = await getSwapQuote(
+        pool,
+        pool.getTokenA(),
+        tokenAAmount,
+      );
 
       printSwapQuote(swapQuote);
+
+      // Do I like the quote? Yes!
+
+      // const swapPayload = await pool.swap(
+      //   keypair,
+      //   solToken,
+      //   solAmount,
+      //   orcaAmount,
+      // );
+
+      // console.log(swapPayload);
+      // const swapTxId = await swapPayload.execute();
+      // console.log(`Swapped ${swapTxId} \n`);
+
       // console.log(pool.getTokenA());
 
       // const toAmount = new Decimal();
