@@ -5,11 +5,8 @@ import {  Network, Orca, OrcaU64, OrcaPool, OrcaPoolToken, getOrca, OrcaFarmConf
 import Decimal from "decimal.js";
 import { argv } from 'process';
 import { createRepl, create } from "ts-node";
-import { TokenListProvider, TokenInfo } from '@solana/spl-token-registry';
+import { TokenListProvider } from '@solana/spl-token-registry';
 // import { process } from 'process';
-
-// TODO semicolon?
-
 
 // Missing APY, volume
 // EXPLORE OrcaPool
@@ -43,6 +40,12 @@ interface SPLPortfolio {
 interface Portfolio {
   balance: number;
   splToken: SPLPortfolio[];
+}
+
+async function getAllTokens(network: Network) {
+  return await new TokenListProvider().resolve().then((tokens) => {
+    return tokens.filterByClusterSlug(network).getList();
+  });
 }
 
 function assert(
@@ -345,8 +348,8 @@ async function poolWithdraw(
 
 
 const main = async () => {
-  let rpcEndpoint;
-  let network;
+  let rpcEndpoint: string;
+  let network: Network;
 
   const networkName = argv[2];
 
@@ -420,19 +423,9 @@ const main = async () => {
     const poolName = getPoolName(tokenA, tokenB);
 
     if (poolName) {
-      const poolAddress = getPoolAddress(poolName);
-      console.log(`address ${poolAddress}`);
-      const pool = orca.getPool(poolAddress);
-
-      // console.log(pool.getTokenA().addr);
-      // console.log(pool.getTokenB().addr);
-
-      // new TokenListProvider().resolve().then((tokens) => {
-      //   const tokenList = tokens.filterByClusterSlug(Network.DEVNET).getList();
-      //   for (let tl of tokenList) {
-      //     console.log(`${tl.address} ${tl.symbol}`);
-      //   }
-      // });
+      // const poolAddress = getPoolAddress(poolName);
+      // console.log(`address ${poolAddress}`);
+      // const pool = orca.getPool(poolAddress);
 
       // const tokenFrom = pool.getTokenB();
       // const tokenFromAmount = new Decimal(0.1);
@@ -457,6 +450,14 @@ const main = async () => {
       // const swapTxId = await swapTxPayload.execute();
       // console.log(`Swapped ${swapTxId} \n`);
     }
+
+    // const tokens = await new TokenListProvider().resolve();
+    // const tokenList = tokens.filterByClusterSlug(Network.DEVNET).getList();
+    // console.log(tokenList);
+
+    // const a = await new TokenListProvider().resolve().then((tokens) => {
+    //   return tokens.filterByClusterSlug(network).getList();
+    // });
 
     const portfolio = await getPortfolio(connection, keypair);
     console.log(portfolio);
