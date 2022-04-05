@@ -7,6 +7,8 @@ import { argv } from 'process';
 import { createRepl, create } from "ts-node";
 // import { process } from 'process';
 
+// TODO semicolon?
+
 
 // Missing APY, volume
 // EXPLORE OrcaPool
@@ -21,6 +23,17 @@ import { createRepl, create } from "ts-node";
    keypair = await loadKeypair();
 */
 
+type SwapQuote = {
+  "from": {
+    "token": OrcaPoolToken,
+    "amount": Decimal | OrcaU64,
+  },
+  "to": {
+    "token": OrcaPoolToken,
+    "amount": Decimal | OrcaU64,
+  }
+}
+
 type SPLPortfolio = {
   "mintContract": string;
   "amount": string;
@@ -30,7 +43,14 @@ type SPLPortfolio = {
 type Portfolio = {
   "balance": number,
   "splToken": SPLPortfolio[],
-};
+}
+
+function assert(
+  condition: unknown,
+  message: string = "",
+): asserts condition {
+  if (!condition) throw new Error(message);
+}
 
 async function getPortfolio(
   connection: Connection,
@@ -92,24 +112,19 @@ function poolFromTokens(
   return `${tokenA}_${tokenB}`;
 }
 
-function accessEnum(
-  enumObject: {[s: string]: string},
-  key: string,
-): undefined | string {
-  const keys = Object.keys(enumObject);
-
-  if (keys.find(x => x == key) == undefined)
-    return undefined;
+function poolNameExist(pool_name: string): boolean {
+  const keys = Object.keys(OrcaPoolConfig);
+  if (keys.find(x => x == pool_name) == undefined)
+    return false;
   else
-    return enumObject[key as keyof typeof enumObject];
+    return true;
 }
 
 function getPoolAddress(
-  tokenA: string,
-  tokenB: string,
-): undefined | string {
-  const pool_name: string = poolFromTokens(tokenA, tokenB);
-  return accessEnum(OrcaPoolConfig, pool_name);
+  pool_name: string,
+): OrcaPoolConfig {
+  /// call `poolNameExist` before
+  return OrcaPoolConfig[pool_name as keyof typeof OrcaPoolConfig];
 }
 
 function getPools(): string[] {
@@ -186,16 +201,66 @@ async function poolDeposit(
   console.log(`Pool deposited ${poolDepositTxId} \n`);
 }
 
+async function getSwapQuote(
+  pool: OrcaPool,
+  tokenFrom: OrcaPoolToken,
+  tokenFromAmount: Decimal | OrcaU64,
+): Promise<SwapQuote> {
+  let tokenTo;
+
+  const tokenA = pool.getTokenA();
+  const tokenB = pool.getTokenB();
+
+  if (tokenA == tokenFrom)
+    tokenTo = tokenB;
+  else
+    tokenTo = tokenA;
+
+  const quote = await pool.getQuote(
+    tokenFrom,
+    tokenFromAmount,
+  );
+
+  const tokenToAmount = quote.getMinOutputAmount();
+
+  const swapQuote = {
+    "from": {
+      "token": tokenFrom,
+      "amount": tokenFromAmount,
+    },
+    "to": {
+      "token": tokenTo,
+      "amount": tokenToAmount,
+    }
+  };
+
+  return swapQuote;
+}
+
+function printSwapQuote(swapQuote: SwapQuote) {
+  console.log(
+    `${swapQuote.from.amount.toNumber()}`,
+    `${swapQuote.from.token.tag}`,
+    ` -> `,
+    `${swapQuote.to.amount.toNumber()}`,
+    `${swapQuote.to.token.tag}`
+  );
+}
+
 async function swap(
   keypair: Keypair,
   pool: OrcaPool,
   tokenFrom: OrcaPoolToken,
   tokenFromAmount: Decimal,
   tokenToAmount: Decimal,
+  execute: boolean = false,
 ) {
   const swapPayload = await pool.swap(keypair, tokenFrom, tokenFromAmount, tokenToAmount);
-  const swapTxId = await swapPayload.execute();
-  console.log(`Swapped: ${swapTxId} \n`);
+
+  if (execute) {
+    const swapTxId = await swapPayload.execute();
+    console.log(`Swapped: ${swapTxId} \n`);
+  }
 }
 
 async function farmDeposit(
@@ -257,12 +322,7 @@ async function poolWithdraw(
   console.log(`Pool withdrawn poolWithdrawTxId \n`);
 }
 
-function assert(
-  condition: unknown,
-  message: string = "",
-): asserts condition {
-  if (!condition) throw new Error(message);
-}
+
 
 const main = async () => {
   let rpcEndpoint;
@@ -290,10 +350,10 @@ const main = async () => {
   // ACCOUNT
   const keypair = await loadKeypair();
   const publicKey = keypair.publicKey.toBase58();
-  console.log(`public ${publicKey}`);
+  console.log(`public key: ${publicKey}`);
 
   try {
-    const pool = orca.getPool(OrcaPoolConfig.ORCA_SOL);
+    // const pool = orca.getPool(OrcaPoolConfig.ORCA_SOL);
     // want to swap SOL to ORCA
     // Swap 0.1 SOL for at least 0.04352 ORCA
     // Actually 0.10205313299999996 SOL for 0.043564 ORCA
@@ -332,15 +392,56 @@ const main = async () => {
     //   `Deposit at most ${maxTokenBIn.toNumber()} SOL and ${maxTokenAIn.toNumber()} ORCA, for at least ${minPoolTokenAmountOut.toNumber()} LP tokens`
     // );
 
-    const tokenA = "ORCA";
+    const tokenA = "SOL";
     const tokenB = "USDC";
 
-    // findPool(tokenA, tokenB);
+    // const poolAddress = getPoolAddress(tokenA, tokenB);
+    // console.log(`pool address: ${poolAddress}`);
 
-    const poolAddress = getPoolAddress(tokenA, tokenB);
-    console.log(poolAddress);
+    // console.log(typeof(OrcaPoolConfig.ORCA_SOL));
 
-    // getPortfolio(connection, keypair);
+    const poolName = poolFromTokens(tokenA, tokenB);
+    if (poolNameExist(poolName)) {
+      const poolAddress = getPoolAddress(poolName);
+      console.log(`address ${poolAddress}`);
+      const pool = orca.getPool(poolAddress);
+
+      const tokenAAmount = new Decimal(0.1);
+      const swapQuote = await getSwapQuote(pool, pool.getTokenA(), tokenAAmount);
+
+      printSwapQuote(swapQuote);
+      // console.log(pool.getTokenA());
+
+      // const toAmount = new Decimal();
+      // swap(
+      //   keypair,
+      //   pool,
+      //   pool.getTokenA(),
+      //   fromAmount,
+      //   toAmount,
+      //   execute=false,
+      // );
+
+    // const solToken = pool.getTokenB();
+    // const solAmount = new Decimal(0.1);
+    // const quote = await pool.getQuote(
+    //   solToken,
+    //   solAmount,
+    // );
+    // const orcaAmount = quote.getMinOutputAmount();
+    // console.log(`Swap ${solAmount.toString()} SOL for at least ${orcaAmount.toNumber()} ORCA`);
+
+    // const swapPayload = await pool.swap(
+    //   keypair,
+    //   solToken,
+    //   solAmount,
+    //   orcaAmount,
+    // );
+    // console.log(swapPayload);
+    // const swapTxId = await swapPayload.execute();
+
+      // getPortfolio(connection, keypair);
+    }
 
   } catch (err) {
     console.warn(err);
