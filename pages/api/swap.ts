@@ -1,10 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getOrca } from "@orca-so/sdk"
 import Decimal from "decimal.js"
+import { getOrca } from "@orca-so/sdk"
+
 import { getConnection, getNetwork, keypairFromB58 } from "@bisonai-orca/solana_utils"
 import { swap, getSwapQuote } from "@bisonai-orca/swap"
 import { getPoolName, getPoolAddress, getTokenFromPool } from "@bisonai-orca/pool"
 import { extractParameter } from "@bisonai-orca/utils"
+import { hasEnoughFunds } from "@bisonai-orca/orca_utils"
+import { CONFIG } from "@bisonai-orca/config"
 
 // Arguments
 //   network
@@ -12,8 +15,9 @@ import { extractParameter } from "@bisonai-orca/utils"
 //   tokenB
 //   tokenAAmount
 // Returns
-//   200
-//   500
+//   200 - OK
+//   400 - not enough funds
+//   500 - non-existant pool
 export default async (req: NextApiRequest, res: NextApiResponse) => {
     const networkParameter = extractParameter(req.query.network)
     const tokenA = extractParameter(req.query.tokenA)
@@ -37,8 +41,22 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         const pool = orca.getPool(poolAddress)
         const tokenFrom = getTokenFromPool(pool, tokenA)
 
-        // TODO: check if enough balance
         const tokenFromAmount = new Decimal(tokenAAmount)
+
+        const enough = await hasEnoughFunds(
+            connection,
+            publicKey,
+            tokenFrom,
+            tokenFromAmount,
+            CONFIG.SWAP_FEE,
+        )
+        if (!enough) {
+            res.
+                status(400).
+                setHeader(...jsonHeader).
+                json({ "error": "Account has not enough funds." })
+            return
+        }
 
         const swapQuote = await getSwapQuote(
             pool,
