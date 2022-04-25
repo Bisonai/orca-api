@@ -1,13 +1,13 @@
 import { getConnection, getPortfolio } from "@bisonai-orca/solana_utils";
-import { addRpcEndpoint, extractStringParameter } from "@bisonai-orca/utils";
+import { addRpcEndpoint, extractParameter } from "@bisonai-orca/utils";
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 // Arguments
 //   network
 //   pk
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-    const network = extractStringParameter(req.query.network)
-    const pk = extractStringParameter(req.query.pk)
+    const network = extractParameter(req.query.network)
+    const pk = extractParameter(req.query.pk)
 
     const connection = getConnection(network)
     const portfolio = addRpcEndpoint(
