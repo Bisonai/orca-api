@@ -28,28 +28,33 @@ export async function hasEnoughFunds(
 
     const tokenAddress = getTokenAddress(token)
 
-    let balance = new Decimal(0.0)
+    const solBalance = new Decimal(
+        toFullDenomination(portfolio.balance, CONFIG.SOL_DECIMALS))
 
     // SOL
     if (token.tag == "SOL") {
-        balance = new Decimal(
-            toFullDenomination(portfolio.balance, CONFIG.SOL_DECIMALS))
+        if (solBalance >= amount.add(fee)) {
+            return true
+        }
+        else {
+            return false
+        }
     }
 
     // splToken
     for (let splt of portfolio.splToken) {
         if (splt.mintAddress == tokenAddress) {
             const amountLamport = parseInt(splt.amount, CONFIG.DECIMAL_BASE)
-            balance = new Decimal(toFullDenomination(amountLamport, splt.decimals))
+            const balance = new Decimal(toFullDenomination(amountLamport, splt.decimals))
 
-            break
+            if ((balance >= amount) && (solBalance >= fee)) {
+                return true
+            }
+            else {
+                return false
+            }
         }
     }
 
-    if (balance >= amount.add(fee)) {
-        return true
-    }
-    else {
-        return false
-    }
+    return false
 }
