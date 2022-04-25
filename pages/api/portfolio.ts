@@ -15,7 +15,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         connection,
     )
 
-    res.statusCode = 200
-    res.setHeader("Content-Type", "application/json")
-    res.end(JSON.stringify(portfolio))
+    res.
+        status(200).
+        setHeader("Content-Type", "application/json").
+        json(portfolio)
 }
