@@ -1,6 +1,8 @@
 import { Connection, PublicKey } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { Network } from "@orca-so/sdk"
+import { Keypair } from "@solana/web3.js"
+import bs58 from "bs58"
 
 interface SPLPortfolio {
     mintAddress: string
@@ -13,6 +15,7 @@ interface Portfolio {
     splToken: SPLPortfolio[]
 }
 
+// TODO Move to orca utils
 export function getNetwork(network: string): Network {
     if ((network != undefined) && Object.keys(Network).includes(network)) {
         return network as Network
@@ -22,6 +25,7 @@ export function getNetwork(network: string): Network {
     }
 }
 
+// TODO Move to orca utils
 function getRpcEndpoint(network: string): string {
     if (network == Network.MAINNET) {
         return "https://api.mainnet-beta.solana.com"
@@ -99,4 +103,21 @@ export async function getPortfolio(
     }
 
     return portfolio
+}
+
+export function bs58SecretKeyFromKeypair(keypair: Keypair): string {
+    return bs58.encode(keypair.secretKey)
+}
+
+export function bs58PublicKeyFromKeypair(keypair: Keypair): string {
+    return bs58.encode(new Uint8Array(keypair.publicKey.toBytes()))
+}
+
+export function keypairFromB58(
+    bs58PublicKey: string,
+    bs58SecretKey: string,
+): Keypair {
+    const publicKey = bs58.decode(bs58PublicKey)
+    const secretKey = bs58.decode(bs58SecretKey)
+    return new Keypair({ publicKey, secretKey })
 }
