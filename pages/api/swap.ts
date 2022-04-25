@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import Decimal from "decimal.js"
 import { getOrca } from "@orca-so/sdk"
 
-import { getConnection, getNetwork, keypairFromB58 } from "@bisonai-orca/solana_utils"
+import { getConnection, getNetwork, keypairFromBs58 } from "@bisonai-orca/solana_utils"
 import { swap, getSwapQuote } from "@bisonai-orca/swap"
 import { getPoolName, getPoolAddress, getTokenFromPool } from "@bisonai-orca/pool"
 import { extractParameter } from "@bisonai-orca/utils"
@@ -65,7 +65,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         )
 
         // FIXME: move outside of the execution REST API
-        const keypair = keypairFromB58(publicKey, secretKey)
+        const keypair = keypairFromBs58(publicKey, secretKey)
 
         const swapTxPayload = await swap(
             pool,
