@@ -116,7 +116,7 @@ export function bs58PublicKeyFromKeypair(keypair: Keypair): string {
     return bs58.encode(new Uint8Array(keypair.publicKey.toBytes()))
 }
 
-export function keypairFromB58(
+export function keypairFromBs58(
     bs58PublicKey: string,
     bs58SecretKey: string,
 ): Keypair {
