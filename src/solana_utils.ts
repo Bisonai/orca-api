@@ -6,6 +6,7 @@ import bs58 from "bs58"
 
 interface SPLPortfolio {
     mintAddress: string
+    ownerAddress: string,
     amount: string
     decimals: number
 }
@@ -48,7 +49,7 @@ export function getConnection(_network: string): Connection {
     )
 }
 
-export function toSol(amount: number, decimals: number): number {
+export function toFullDenomination(amount: number, decimals: number): number {
     return amount * (10 ** (-decimals))
 }
 
@@ -87,11 +88,13 @@ export async function getPortfolio(
     for (let acc of accounts) {
         const account: any = acc.account.data  // FIXME any
         const mintAddress = account.parsed.info.mint
+        const ownerAddress = account.parsed.info.owner
         const amount = account.parsed.info.tokenAmount.amount
         const decimals = account.parsed.info.tokenAmount.decimals
 
         splToken.push({
             mintAddress,
+            ownerAddress,
             amount,
             decimals,
         })
