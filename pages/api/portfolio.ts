@@ -1,6 +1,6 @@
+import type { NextApiRequest, NextApiResponse } from 'next'
 import { getConnection, getPortfolio } from "@bisonai-orca/solana_utils"
 import { addRpcEndpoint, extractParameter } from "@bisonai-orca/utils"
-import type { NextApiRequest, NextApiResponse } from 'next'
 
 // Arguments
 //   network
