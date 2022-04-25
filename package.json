@@ -16,6 +16,7 @@
     "@orca-so/sdk": "^1.2.23",
     "@solana/spl-token-registry": "^0.2.3232",
     "@solana/web3.js": "^1.37.0",
+    "bs58": "^5.0.0",
     "decimal.js": "^10.3.1",
     "fs": "^0.0.1-security",
     "mz": "^2.7.0",
