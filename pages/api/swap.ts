@@ -14,6 +14,8 @@ import { CONFIG } from "@bisonai-orca/config"
 //   tokenA
 //   tokenB
 //   tokenAAmount
+//   sk - secret key (temporary)
+//   pk - public key (temporary)
 // Returns
 //   200 - OK
 //   400 - not enough funds
