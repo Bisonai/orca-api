@@ -12,7 +12,9 @@ export function addRpcEndpoint(res: any, connection: Connection): Object {
     return res
 }
 
-export function extractParameter<T>(v: T | T[]) {
+export function extractParameter<T>(
+    v: T | T[],
+): T {
     if (Array.isArray(v)) {
         return v[0]
     }

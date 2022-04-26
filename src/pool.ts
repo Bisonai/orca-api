@@ -1,6 +1,7 @@
 import Decimal from "decimal.js"
 import { Keypair } from "@solana/web3.js"
-import { OrcaU64, OrcaPool, OrcaPoolToken, OrcaPoolConfig } from "@orca-so/sdk"
+import { getConnection, getNetwork } from "@bisonai-orca/solana_utils"
+import { getOrca, OrcaU64, OrcaPool, OrcaPoolToken, OrcaPoolConfig, DepositQuote } from "@orca-so/sdk"
 
 function poolNameExist(pool_name: string): boolean {
     const keys = Object.keys(OrcaPoolConfig)
@@ -21,7 +22,27 @@ function getPools(): string[] {
     return Object.keys(OrcaPoolConfig)
 }
 
-// EXPORT
+export function getPoolFromTokens(
+    network: string,
+    tokenA: string,
+    tokenB: string,
+): OrcaPool {
+    const poolName = getPoolName(tokenA, tokenB)
+
+    if (poolName) {
+        // unify required `network` and `network_shortcut`
+        const network_shortcut = getNetwork(network)
+        const connection = getConnection(network)
+        const poolAddress = getPoolAddress(poolName)
+
+        const orca = getOrca(connection, network_shortcut)
+        return orca.getPool(poolAddress)
+    }
+    else {
+        throw new Error(`There is no pool with [${tokenA}] and [${tokenB}]`)
+    }
+}
+
 export function getTokenFromPool(
     pool: OrcaPool,
     token: string,
@@ -58,7 +79,7 @@ export function getPoolName(
 export function getPoolAddress(
     pool_name: string,
 ): OrcaPoolConfig {
-    /// call `poolNameExist` before
+    // call `poolNameExist` before
     return OrcaPoolConfig[pool_name as keyof typeof OrcaPoolConfig]
 }
 
@@ -68,35 +89,32 @@ export function getPoolTokens(): string[] {
     return Array.from(tokens.values())
 }
 
-export async function poolDeposit(
-    keypair: Keypair,
+export async function getPoolDepositQuote(
     pool: OrcaPool,
     tokenAAmount: Decimal | OrcaU64,
     tokenBAmount: Decimal | OrcaU64,
-) {
-    const slippage = new Decimal(0.01) // FIXME
-    const { maxTokenAIn, maxTokenBIn, minPoolTokenAmountOut } = await pool.getDepositQuote(
+    slippage: Decimal,
+): Promise<DepositQuote> {
+    return await pool.getDepositQuote(
         tokenAAmount,
         tokenBAmount,
         slippage,
     )
+}
 
-    console.log(`token A ${maxTokenAIn.toNumber()}`)
-    console.log(`token B ${maxTokenBIn.toNumber()}`)
-    console.log(`LP tokens ${minPoolTokenAmountOut.toNumber()}`)
-
-    const poolDepositPayload = await pool.deposit(
+export async function poolDeposit(
+    pool: OrcaPool,
+    poolDepositQuote: DepositQuote,
+    keypair: Keypair,
+) {
+    const poolDepositTx = await pool.deposit(
         keypair,
-        maxTokenAIn,
-        maxTokenBIn,
-        minPoolTokenAmountOut,
+        poolDepositQuote.maxTokenAIn,
+        poolDepositQuote.maxTokenBIn,
+        poolDepositQuote.minPoolTokenAmountOut,
     )
 
-    // FIXME delete
-    console.log(poolDepositPayload)
-
-    // const poolDepositTxId = await poolDepositPayload.execute()
-    // console.log(`Pool deposited ${poolDepositTxId} \n`)
+    return poolDepositTx
 }
 
 export async function poolWithdraw(
