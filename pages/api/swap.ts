@@ -9,6 +9,8 @@ import { extractParameter } from "@bisonai-orca/utils"
 import { hasEnoughFunds } from "@bisonai-orca/orca_utils"
 import { CONFIG } from "@bisonai-orca/config"
 
+// TODO add `slippage` parameter
+
 // Arguments
 //   network
 //   tokenA
@@ -34,6 +36,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const connection = getConnection(networkParameter)
     const orca = getOrca(connection, network)
 
+    // TODO use `getPoolFromTokens` instead
     const poolName = getPoolName(tokenA, tokenB)
 
     const jsonHeader: [string, string] = ["Content-Type", "application/json"]
@@ -80,7 +83,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             res.
                 status(200).
                 setHeader(...jsonHeader).
-                json({ swapTxId })
+                json({ "txId": swapTxId })
         } catch (error) {
             res.status(500).
                 setHeader(...jsonHeader).
