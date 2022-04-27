@@ -1,7 +1,7 @@
 import Decimal from "decimal.js"
-import { Keypair } from "@solana/web3.js"
+import { Keypair, PublicKey } from "@solana/web3.js"
 import { getConnection, getNetwork } from "@bisonai-orca/solana_utils"
-import { getOrca, OrcaU64, OrcaPool, OrcaPoolToken, OrcaPoolConfig, DepositQuote } from "@orca-so/sdk"
+import { getOrca, OrcaU64, OrcaPool, OrcaPoolToken, OrcaPoolConfig, DepositQuote, WithdrawQuote } from "@orca-so/sdk"
 
 function poolNameExist(pool_name: string): boolean {
     const keys = Object.keys(OrcaPoolConfig)
@@ -115,6 +115,19 @@ export async function poolDeposit(
     )
 
     return poolDepositTx
+}
+
+export async function getWithdrawQuote(
+    pool: OrcaPool,
+    publicKey: PublicKey,
+): Promise<WithdrawQuote> {
+    const withdrawTokenAmount = await pool.getLPBalance(publicKey)
+    const withdrawTokenMint = pool.getPoolTokenMint()
+
+    return await pool.getWithdrawQuote(
+        withdrawTokenAmount,
+        withdrawTokenMint
+    )
 }
 
 export async function poolWithdraw(
