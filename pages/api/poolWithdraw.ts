@@ -2,9 +2,11 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import { getOrca } from "@orca-so/sdk"
 
 import { getConnection, getNetwork, keypairFromBs58 } from "@bisonai-orca/solana_utils"
+import { hasFunds } from "@bisonai-orca/orca_utils"
 import { getPoolName, getPoolAddress } from "@bisonai-orca/pool"
 import { extractParameter } from "@bisonai-orca/utils"
 import { getWithdrawQuote, poolWithdraw, isDepositedPool } from "@bisonai-orca/pool";
+import { CONFIG } from "@bisonai-orca/config"
 
 // TODO check if enough funds for paying withdraw fees (0.000015 SOL)
 // TODO pass signed transaction instead of pk & sk
@@ -52,6 +54,18 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
                 status(400).
                 setHeader(...jsonHeader).
                 json({ "error": `Pool with tokens [${tokenA}] and [${tokenB}] has nothing to withdraw.` })
+            return
+        }
+
+        if (!hasFunds(
+            connection,
+            keypair.publicKey,
+            CONFIG.WITHDRAW_FEE,
+        )) {
+            res.
+                status(400).
+                setHeader(...jsonHeader).
+                json({ "error": "Account does not have enough funds to pay fees." })
             return
         }
 
