@@ -48,18 +48,17 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
         const tokenFromAmount = new Decimal(tokenAAmount)
 
-        const enough = await hasEnoughFunds(
+        if (!await hasEnoughFunds(
             connection,
             publicKey,
             tokenFrom,
             tokenFromAmount,
             CONFIG.SWAP_FEE,
-        )
-        if (!enough) {
+        )) {
             res.
                 status(400).
                 setHeader(...jsonHeader).
-                json({ "error": "Account has not enough funds." })
+                json({ "error": "Account does not have enough funds." })
             return
         }
 
