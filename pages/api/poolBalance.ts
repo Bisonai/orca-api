@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import { PublicKey } from "@solana/web3.js"
 
 import { extractParameter } from "@bisonai-orca/utils"
-import { getWithdrawQuote, getPoolFromTokens, withdrawQuoteToJSON } from "@bisonai-orca/pool";
+import { getWithdrawQuote, getPoolFromTokens } from "@bisonai-orca/pool";
 
 // Arguments
 //   network
