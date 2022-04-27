@@ -1,4 +1,4 @@
-import { OrcaU64, OrcaPool, OrcaPoolToken } from "@orca-so/sdk"
+import { OrcaU64, OrcaPool, OrcaPoolToken, TransactionPayload } from "@orca-so/sdk"
 import { Keypair } from "@solana/web3.js"
 import Decimal from "decimal.js"
 
@@ -16,15 +16,13 @@ export async function swap(
     pool: OrcaPool,
     keypair: Keypair,
     swapQuote: SwapQuote,
-) {
-    const swapTx = await pool.swap(
+): Promise<TransactionPayload> {
+    return await pool.swap(
         keypair,
         swapQuote.from.token,
         swapQuote.from.amount,
         swapQuote.to.amount,
     )
-
-    return swapTx
 }
 
 export async function getSwapQuote(
