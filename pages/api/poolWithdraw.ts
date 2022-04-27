@@ -61,12 +61,17 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             withdrawQuote,
         )
 
-        const poolWithdrawTxId = await poolWithdrawTxPayload.execute()
-
-        res.
-            status(200).
-            setHeader(...jsonHeader).
-            json({ "txId": poolWithdrawTxId })
+        try {
+            const poolWithdrawTxId = await poolWithdrawTxPayload.execute()
+            res.
+                status(200).
+                setHeader(...jsonHeader).
+                json({ "txId": poolWithdrawTxId })
+        } catch (error) {
+            res.status(500).
+                setHeader(...jsonHeader).
+                json({ error })
+        }
     }
     else {
         const error = `Non-existent pool [${poolName}] with tokens [${tokenA}] and [${tokenB}].`
