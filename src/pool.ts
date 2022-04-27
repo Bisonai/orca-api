@@ -1,7 +1,7 @@
 import Decimal from "decimal.js"
 import { Keypair, PublicKey } from "@solana/web3.js"
 import { getConnection, getNetwork } from "@bisonai-orca/solana_utils"
-import { getOrca, OrcaU64, OrcaPool, OrcaPoolToken, OrcaPoolConfig, DepositQuote, WithdrawQuote } from "@orca-so/sdk"
+import { TransactionPayload, getOrca, OrcaU64, OrcaPool, OrcaPoolToken, OrcaPoolConfig, DepositQuote, WithdrawQuote } from "@orca-so/sdk"
 
 function poolNameExist(pool_name: string): boolean {
     const keys = Object.keys(OrcaPoolConfig)
@@ -133,25 +133,12 @@ export async function getWithdrawQuote(
 export async function poolWithdraw(
     pool: OrcaPool,
     keypair: Keypair,
-) {
-    const withdrawTokenAmount = await pool.getLPBalance(keypair.publicKey)
-    const withdrawTokenMint = pool.getPoolTokenMint()
-    const { maxPoolTokenAmountIn, minTokenAOut, minTokenBOut } = await pool.getWithdrawQuote(
-        withdrawTokenAmount,
-        withdrawTokenMint
-    )
-
-    console.log(
-        `Withdraw at most ${maxPoolTokenAmountIn.toNumber()} ORCA_SOL LP token for at least ${minTokenAOut.toNumber()} ORCA and ${minTokenBOut.toNumber()} SOL`
-    )
-
-    const poolWithdrawPayload = await pool.withdraw(
+    withdrawQuote: WithdrawQuote,
+): Promise<TransactionPayload> {
+    return await pool.withdraw(
         keypair,
-        maxPoolTokenAmountIn,
-        minTokenAOut,
-        minTokenBOut
+        withdrawQuote.maxPoolTokenAmountIn,
+        withdrawQuote.minTokenAOut,
+        withdrawQuote.minTokenBOut
     )
-
-    const poolWithdrawTxId = await poolWithdrawPayload.execute()
-    console.log(`Pool withdrawn poolWithdrawTxId \n`)
 }
