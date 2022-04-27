@@ -142,3 +142,16 @@ export async function poolWithdraw(
         withdrawQuote.minTokenBOut
     )
 }
+
+export function isDepositedPool(withdrawQuote: WithdrawQuote): boolean {
+    // Test if there are any funds defined by `WithdrawQuote` left to
+    // withdraw from pool.
+    if ((withdrawQuote.maxPoolTokenAmountIn.toNumber() === 0) &&
+        (withdrawQuote.minTokenAOut.toNumber() === 0) &&
+        (withdrawQuote.minTokenBOut.toNumber() === 0)) {
+        return false
+    }
+    else {
+        return true
+    }
+}

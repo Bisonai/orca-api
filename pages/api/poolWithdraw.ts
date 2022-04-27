@@ -4,10 +4,9 @@ import { getOrca } from "@orca-so/sdk"
 import { getConnection, getNetwork, keypairFromBs58 } from "@bisonai-orca/solana_utils"
 import { getPoolName, getPoolAddress } from "@bisonai-orca/pool"
 import { extractParameter } from "@bisonai-orca/utils"
-import { getWithdrawQuote, poolWithdraw } from "@bisonai-orca/pool";
+import { getWithdrawQuote, poolWithdraw, isDepositedPool } from "@bisonai-orca/pool";
 
 // TODO check if enough funds for paying withdraw fees (0.000015 SOL)
-// TODO check if there is anything to withdraw
 // TODO pass signed transaction instead of pk & sk
 
 // Arguments
@@ -47,6 +46,14 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             pool,
             keypair.publicKey,
         )
+
+        if (!isDepositedPool(withdrawQuote)) {
+            res.
+                status(400).
+                setHeader(...jsonHeader).
+                json({ "error": `Pool with tokens [${tokenA}] and [${tokenB}] has nothing to withdraw.` })
+            return
+        }
 
         const poolWithdrawTxPayload = await poolWithdraw(
             pool,
