@@ -8,7 +8,6 @@ import { extractParameter } from "@bisonai-orca/utils"
 import { getWithdrawQuote, poolWithdraw, isDepositedPool } from "@bisonai-orca/pool";
 import { CONFIG } from "@bisonai-orca/config"
 
-// TODO check if enough funds for paying withdraw fees (0.000015 SOL)
 // TODO pass signed transaction instead of pk & sk
 
 // Arguments
