@@ -53,11 +53,11 @@ export function toFullDenomination(amount: number, decimals: number): number {
     return amount * (10 ** (-decimals))
 }
 
-async function getBalance(
+export async function getBalance(
     connection: Connection,
-    pk: string,
+    publicKey: PublicKey,
 ): Promise<number> {
-    return await connection.getBalance(new PublicKey(pk))
+    return await connection.getBalance(publicKey)
 }
 
 export async function getPortfolio(
@@ -81,7 +81,7 @@ export async function getPortfolio(
         }
     )
 
-    const balance = await getBalance(connection, pk)
+    const balance = await getBalance(connection, new PublicKey(pk))
 
     let splToken: SPLPortfolio[] = []
 
