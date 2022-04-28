@@ -45,6 +45,7 @@ async function gaugeDepositAmountOfOtherToken(
 //   pk - public key (temporary)
 // Returns
 //   200 - OK
+//   400 - Not enough funds
 //   500
 export default async (req: NextApiRequest, res: NextApiResponse) => {
     const networkParameter = extractParameter(req.query.network)
@@ -167,12 +168,17 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         )
 
         // TODO catch exceptions
-        const poolDepositTxId = await poolDepositTxPayload.execute()
-
-        res.
-            status(200).
-            setHeader(...jsonHeader).
-            json({ "txId": poolDepositTxId })
+        try {
+            const poolDepositTxId = await poolDepositTxPayload.execute()
+            res.
+                status(200).
+                setHeader(...jsonHeader).
+                json({ "txId": poolDepositTxId })
+        } catch (error) {
+            res.status(500).
+                setHeader(...jsonHeader).
+                json({ error })
+        }
     }
     catch (error) {
         res.status(500).
