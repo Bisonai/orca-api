@@ -1,12 +1,39 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
+import type { NextApiRequest, NextApiResponse } from "next"
 import Decimal from "decimal.js"
+import { OrcaPool, OrcaPoolToken, OrcaU64 } from "@orca-so/sdk"
 
+import { getConnection } from "@bisonai-orca/solana_utils"
 import { poolDeposit, getPoolDepositQuote, getPoolFromTokens } from "@bisonai-orca/pool";
 import { extractParameter } from "@bisonai-orca/utils"
 import { keypairFromBs58 } from "@bisonai-orca/solana_utils"
-import { OrcaPool } from '@orca-so/sdk';
+import { hasEnoughSPLFunds } from "@bisonai-orca/orca_utils"
+import { getSwapQuote } from "@bisonai-orca/swap"
+import { getTokenFromPool } from "@bisonai-orca/pool"
 
-// TODO 50:50 add if only one amount set
+// TODO check if fnuds for fee (0.000015)
+
+interface TokenAmountDeposits {
+    tokenAAmount: Decimal | OrcaU64
+    tokenBAmount: Decimal | OrcaU64
+}
+
+async function gaugeDepositAmountOfOtherToken(
+    pool: OrcaPool,
+    token: OrcaPoolToken,
+    tokenAmount: Decimal,
+): Promise<TokenAmountDeposits> {
+    const poolToken = getTokenFromPool(pool, token.tag)
+    const swapQuote = await getSwapQuote(
+        pool,
+        poolToken,
+        tokenAmount,
+    )
+
+    const tokenAAmount = swapQuote.from.amount
+    const tokenBAmount = swapQuote.to.amount
+
+    return { tokenAAmount, tokenBAmount }
+}
 
 // Arguments
 //   network
@@ -19,12 +46,14 @@ import { OrcaPool } from '@orca-so/sdk';
 //   pk - public key (temporary)
 // Returns
 //   200 - OK
+//   500
 export default async (req: NextApiRequest, res: NextApiResponse) => {
     const networkParameter = extractParameter(req.query.network)
+    // FIXME consider different token names
     const tokenA = extractParameter(req.query.tokenA)
     const tokenB = extractParameter(req.query.tokenB)
-    const tokenAAmount = new Decimal(extractParameter(req.query.tokenAAmount))
-    const tokenBAmount = new Decimal(extractParameter(req.query.tokenBAmount))
+    const tokenAAmountParameter = extractParameter(req.query.tokenAAmount)
+    const tokenBAmountParameter = extractParameter(req.query.tokenBAmount)
 
     // FIXME: pass already signed transaction instead
     const secretKey = extractParameter(req.query.sk)
@@ -33,7 +62,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const jsonHeader: [string, string] = ["Content-Type", "application/json"]
 
     const slippageParameter = req.query.slippage
-    const slippage = (slippageParameter === undefined) ? new Decimal(0.01) : new Decimal(extractParameter(slippageParameter))
+    const slippageDefault = new Decimal(0.01)
+    const slippage = (slippageParameter === undefined) ? slippageDefault : new Decimal(extractParameter(slippageParameter))
 
     try {
         const pool = getPoolFromTokens(
@@ -42,16 +72,80 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             tokenB,
         )
 
+        const orcaPoolTokenA = pool.getTokenA()
+        const orcaPoolTokenB = pool.getTokenB()
+
+        let orcaPoolTokenADeposit: string = ""
+        let orcaPoolTokenBDeposit: string = ""
+
+        if (orcaPoolTokenA.tag == tokenA) {
+            orcaPoolTokenADeposit = tokenAAmountParameter
+            orcaPoolTokenBDeposit = tokenBAmountParameter
+        }
+        else if (orcaPoolTokenA.tag == tokenB) {
+            orcaPoolTokenADeposit = tokenBAmountParameter
+            orcaPoolTokenBDeposit = tokenAAmountParameter
+        }
+
+        let tokenAmountDeposits: TokenAmountDeposits = {
+            "tokenAAmount": new Decimal(0),
+            "tokenBAmount": new Decimal(0),
+        }
+
+        if ((orcaPoolTokenADeposit === undefined) && (orcaPoolTokenBDeposit === undefined)) {
+            res.
+                status(400).
+                setHeader(...jsonHeader).
+                json({ "error": "At least one amount of token must be defined." })
+            return
+        }
+        else if ((orcaPoolTokenADeposit !== undefined) && (orcaPoolTokenBDeposit !== undefined)) {
+            const tokenAAmount = new Decimal(orcaPoolTokenADeposit)
+            const tokenBAmount = new Decimal(orcaPoolTokenBDeposit)
+
+            tokenAmountDeposits = {
+                tokenAAmount,
+                tokenBAmount,
+            }
+        }
+        else if (orcaPoolTokenADeposit !== undefined) {
+            tokenAmountDeposits = await gaugeDepositAmountOfOtherToken(
+                pool,
+                orcaPoolTokenA,
+                new Decimal(orcaPoolTokenADeposit),
+            )
+        }
+        else if (tokenBAmountParameter !== undefined) {
+            tokenAmountDeposits = await gaugeDepositAmountOfOtherToken(
+                pool,
+                orcaPoolTokenB,
+                new Decimal(orcaPoolTokenBDeposit),
+            )
+        }
+
         // FIXME: move outside of the execution REST API
         const keypair = keypairFromBs58(
             publicKey,
             secretKey,
         )
 
+        const connection = getConnection(networkParameter)
+
+        if (
+            (!hasEnoughSPLFunds(connection, publicKey, orcaPoolTokenA, tokenAmountDeposits.tokenAAmount)) ||
+            (!hasEnoughSPLFunds(connection, publicKey, orcaPoolTokenB, tokenAmountDeposits.tokenBAmount))
+        ) {
+            res.
+                status(400).
+                setHeader(...jsonHeader).
+                json({ "error": "Account does not have enough funds." })
+            return
+        }
+
         const poolDepositQuote = await getPoolDepositQuote(
             pool,
-            tokenAAmount,
-            tokenBAmount,
+            tokenAmountDeposits.tokenAAmount,
+            tokenAmountDeposits.tokenBAmount,
             slippage,
         )
 
@@ -60,6 +154,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             poolDepositQuote,
             keypair,
         )
+
+        // TODO catch exceptions
         const poolDepositTxId = await poolDepositTxPayload.execute()
 
         res.
