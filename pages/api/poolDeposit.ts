@@ -6,11 +6,10 @@ import { getConnection } from "@bisonai-orca/solana_utils"
 import { poolDeposit, getPoolDepositQuote, getPoolFromTokens } from "@bisonai-orca/pool";
 import { extractParameter } from "@bisonai-orca/utils"
 import { keypairFromBs58 } from "@bisonai-orca/solana_utils"
-import { hasEnoughSPLFunds } from "@bisonai-orca/orca_utils"
+import { hasFunds, hasEnoughSPLFunds } from "@bisonai-orca/orca_utils"
 import { getSwapQuote } from "@bisonai-orca/swap"
 import { getTokenFromPool } from "@bisonai-orca/pool"
-
-// TODO check if fnuds for fee (0.000015)
+import { CONFIG } from "@bisonai-orca/config"
 
 interface TokenAmountDeposits {
     tokenAAmount: Decimal | OrcaU64
@@ -139,6 +138,18 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
                 status(400).
                 setHeader(...jsonHeader).
                 json({ "error": "Account does not have enough funds." })
+            return
+        }
+
+        if (!hasFunds(
+            connection,
+            keypair.publicKey,
+            CONFIG.POOL_DEPOSIT_FEE,
+        )) {
+            res.
+                status(400).
+                setHeader(...jsonHeader).
+                json({ "error": "Account does not have enough funds to pay fees." })
             return
         }
 
