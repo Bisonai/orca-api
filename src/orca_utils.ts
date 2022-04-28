@@ -2,6 +2,7 @@ import Decimal from "decimal.js"
 import { Connection, PublicKey } from "@solana/web3.js"
 import { TokenListProvider } from '@solana/spl-token-registry'
 import { Network, OrcaPoolToken } from "@orca-so/sdk"
+import { OrcaU64 } from "@orca-so/sdk"
 
 import { getPortfolio, toFullDenomination, getBalance } from "@bisonai-orca/solana_utils"
 import { CONFIG } from "@bisonai-orca/config"
@@ -30,6 +31,33 @@ export async function hasFunds(
     else {
         return false
     }
+}
+
+export async function hasEnoughSPLFunds(
+    connection: Connection,
+    publicKey: string, // FIXME use PublicKey type instead
+    token: OrcaPoolToken,
+    amount: OrcaU64 | Decimal, // FIXME stop using Decimal
+): Promise<boolean> {
+    const tokenAddress = getTokenAddress(token)
+    const portfolio = await getPortfolio(connection, publicKey)
+
+    for (let splt of portfolio.splToken) {
+        if (splt.mintAddress == tokenAddress) {
+            // FIXME stop using Decimal
+            const splTokenAmount = parseInt(splt.amount, CONFIG.DECIMAL_BASE)
+            const balance = new Decimal(toFullDenomination(splTokenAmount, splt.decimals))
+
+            if (balance >= amount) {
+                return true
+            }
+            else {
+                return false
+            }
+        }
+    }
+
+    return false
 }
 
 export async function hasEnoughFunds(
