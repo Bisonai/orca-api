@@ -1,51 +1,39 @@
-# orca-api
+# Orca API
 
-```shell
-ts-node .
+## Installation
+
+```bash
+$ npm install
 ```
 
-## Swap
+## Running the app
 
-Swap 0.1 `SOL` for `ETH`.
+```bash
+# development
+$ npm run start
 
-```
-const tokenB = "ETH";
-const tokenA = "SOL";
-const poolName = getPoolName(tokenA, tokenB);
+# watch mode
+$ npm run start:dev
 
-if (poolName) {
-  const poolAddress = getPoolAddress(poolName);
-  console.log(`address ${poolAddress}`);
-  const pool = orca.getPool(poolAddress);
-
-  const tokenFrom = getTokenFromPool(pool, tokenA);
-  const tokenFromAmount = new Decimal(0.1);
-  const swapQuote = await getSwapQuote(
-    pool,
-    tokenFrom,
-    tokenFromAmount,
-  );
-
-  printSwapQuote(swapQuote);
-
-  const swapTxPayload = await swap(
-    pool,
-    keypair,
-    swapQuote,
-  );
-
-  console.log(swapTxPayload);
-
-  const swapTxId = await swapTxPayload.execute();
-  console.log(`Swapped ${swapTxId} \n`);
-}
+# production mode
+$ npm run start:prod
 ```
 
-## Portfolio
+## Test
 
-Show portfolio.
+```bash
+# unit tests
+$ npm run test
 
-```typescript
-const portfolio = await getPortfolio(connection, keypair);
-console.log(portfolio);
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
 ```
+
+
+
+## License
+
+Apache License 2.0
