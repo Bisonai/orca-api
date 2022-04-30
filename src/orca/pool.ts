@@ -25,7 +25,7 @@ function poolFromTokens(tokenA: string, tokenB: string): string {
     return `${tokenA}_${tokenB}`;
 }
 
-function getPools(): string[] {
+export function getPools(): string[] {
     return Object.keys(OrcaPoolConfig);
 }
 
