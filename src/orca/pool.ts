@@ -12,9 +12,9 @@ import {
     WithdrawQuote,
 } from '@orca-so/sdk';
 
-function poolNameExist(pool_name: string): boolean {
+function poolNameExist(poolName: string): boolean {
     const keys = Object.keys(OrcaPoolConfig);
-    if (keys.find((x) => x === pool_name) === undefined) {
+    if (keys.find((x) => x === poolName) === undefined) {
         return false;
     }
 
@@ -41,12 +41,11 @@ export function getPoolFromTokens(
         const networkShortcut = getNetwork(network);
         const connection = getConnection(network);
         const poolAddress = getPoolAddress(poolName);
-
         const orca = getOrca(connection, networkShortcut);
         return orca.getPool(poolAddress);
     }
 
-    throw new Error(`There is no pool with [${tokenA}] and [${tokenB}]`);
+    throw new Error(`There is no pool with [${tokenA}] and [${tokenB}].`);
 }
 
 export function getTokenFromPool(pool: OrcaPool, token: string): OrcaPoolToken {
@@ -85,9 +84,9 @@ export function getPoolName(
     return undefined;
 }
 
-export function getPoolAddress(pool_name: string): OrcaPoolConfig {
+export function getPoolAddress(poolName: string): OrcaPoolConfig {
     // Call `poolNameExist` before
-    return OrcaPoolConfig[pool_name as keyof typeof OrcaPoolConfig];
+    return OrcaPoolConfig[poolName as keyof typeof OrcaPoolConfig];
 }
 
 export function getPoolTokens(): string[] {
@@ -109,15 +108,13 @@ export async function poolDeposit(
     pool: OrcaPool,
     poolDepositQuote: DepositQuote,
     keypair: Keypair,
-) {
-    const poolDepositTx = await pool.deposit(
+): Promise<TransactionPayload> {
+    return await pool.deposit(
         keypair,
         poolDepositQuote.maxTokenAIn,
         poolDepositQuote.maxTokenBIn,
         poolDepositQuote.minPoolTokenAmountOut,
     );
-
-    return poolDepositTx;
 }
 
 export async function getWithdrawQuote(
