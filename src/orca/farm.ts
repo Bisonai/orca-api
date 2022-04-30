@@ -85,14 +85,11 @@ export async function farmDeposit(
     return await farm.deposit(keypair, lpBalance);
 }
 
-export async function farmWithDraw(
-    connection: Orca,
-    farmId: OrcaFarmConfig,
+export async function farmWithdraw(
+    farm: OrcaFarm,
     keypair: Keypair,
 ) {
-    const farm = connection.getFarm(farmId);
-    const farmBalance = await farm.getFarmBalance(keypair.publicKey); // Withdraw the entire balance
-    const farmWithdrawPayload = await farm.withdraw(keypair, farmBalance);
-    const farmWithdrawTxId = await farmWithdrawPayload.execute();
-    console.log(`Farm withdrawn ${farmWithdrawTxId} \n`);
+    // Withdraw the entire balance
+    const farmBalance = await farm.getFarmBalance(keypair.publicKey);
+    return await farm.withdraw(keypair, farmBalance);
 }

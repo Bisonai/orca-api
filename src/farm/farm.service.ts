@@ -1,7 +1,8 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { FarmBalanceInterface } from './interface/farm-balance.interface';
 import { FarmDepositInterface } from './interface/farm-deposit.interface';
-import { farmDeposit } from '@bisonai-orca/farm';
+import { FarmWithdrawInterface } from './interface/farm-withdraw.interface';
+import { farmDeposit, farmWithdraw } from '@bisonai-orca/farm';
 
 
 @Injectable()
@@ -20,6 +21,21 @@ export class FarmService {
             );
 
             return await farmDepositTxPayload.execute();
+        } catch (error) {
+            throw new InternalServerErrorException({
+                description: error,
+            });
+        }
+    }
+
+    async withdraw(i: FarmWithdrawInterface) {
+        try {
+            const farmWithdrawTxPayload = await farmWithdraw(
+                i.farm,
+                i.keypair,
+            );
+
+            return await farmWithdrawTxPayload.execute();
         } catch (error) {
             throw new InternalServerErrorException({
                 description: error,
