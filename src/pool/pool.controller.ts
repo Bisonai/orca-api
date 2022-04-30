@@ -1,7 +1,7 @@
-import { Controller, Post, Body, BadRequestException, HttpCode } from '@nestjs/common';
+import { Controller, Post, Get, Body, BadRequestException, HttpCode } from '@nestjs/common';
 import { PublicKey } from '@solana/web3.js';
 import { keypairFromBs58, getConnection } from '@bisonai-orca/solana-utils';
-import { getPoolFromTokens } from '@bisonai-orca/pool';
+import { getPools, getPoolFromTokens } from '@bisonai-orca/pool';
 import { CONFIG } from '@bisonai-orca/config';
 import {
     getSlippage,
@@ -15,6 +15,12 @@ import { BalanceDto } from './dto/balance.dto';
 @Controller('pool')
 export class PoolController {
     constructor(private readonly poolService: PoolService) { }
+
+    @Get()
+    @HttpCode(200)
+    async farm() {
+        return getPools();
+    }
 
     @Post('balance')
     @HttpCode(200)
