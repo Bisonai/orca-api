@@ -4,7 +4,6 @@ import { FarmDepositInterface } from './interface/farm-deposit.interface';
 import { FarmWithdrawInterface } from './interface/farm-withdraw.interface';
 import { farmDeposit, farmWithdraw } from '@bisonai-orca/farm';
 
-
 @Injectable()
 export class FarmService {
     async balance(i: FarmBalanceInterface) {
