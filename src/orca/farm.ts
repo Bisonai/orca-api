@@ -37,39 +37,6 @@ export function getFarmFromTokens(
     throw new Error(`There is no [$[farmType]] farm with [${tokenA}], [${tokenB}] tokens.`);
 }
 
-export async function farmDeposit(
-    connection: Orca,
-    farmId: OrcaFarmConfig,
-    keypair: Keypair,
-    pool: OrcaPool,
-) {
-    // Note 1: for double dip, repeat step 5 but with the double dip farm
-    // Note 2: to harvest reward, orcaSolFarm.harvest(owner)
-    // Note 3: to get harvestable reward amount, orcaSolFarm.getHarvestableAmount(owner.publicKey)
-
-    const lpBalance = await pool.getLPBalance(keypair.publicKey);
-
-    const farm = connection.getFarm(farmId);
-
-    const farmDepositPayload = await farm.deposit(keypair, lpBalance);
-
-    const farmDepositTxId = await farmDepositPayload.execute();
-
-    console.log(`Farm deposited ${farmDepositTxId} "\n`);
-}
-
-export async function farmWithDraw(
-    connection: Orca,
-    farmId: OrcaFarmConfig,
-    keypair: Keypair,
-) {
-    const farm = connection.getFarm(farmId);
-    const farmBalance = await farm.getFarmBalance(keypair.publicKey); // Withdraw the entire balance
-    const farmWithdrawPayload = await farm.withdraw(keypair, farmBalance);
-    const farmWithdrawTxId = await farmWithdrawPayload.execute();
-    console.log(`Farm withdrawn ${farmWithdrawTxId} \n`);
-}
-
 function farmNameExist(farmName: string): boolean {
     const keys = Object.keys(OrcaFarmConfig);
     if (keys.find((x) => x === farmName) === undefined) {
@@ -102,7 +69,30 @@ export function getFarmName(
         return farmBA;
     }
     else {
-
         return undefined;
     }
+}
+
+export async function farmDeposit(
+    farm: OrcaFarm,
+    pool: OrcaPool,
+    keypair: Keypair,
+) {
+    // Note 1: for double dip, repeat step 5 but with the double dip farm
+    // Note 2: to harvest reward, orcaSolFarm.harvest(owner)
+    // Note 3: to get harvestable reward amount, orcaSolFarm.getHarvestableAmount(owner.publicKey)
+    const lpBalance = await pool.getLPBalance(keypair.publicKey);
+    return await farm.deposit(keypair, lpBalance);
+}
+
+export async function farmWithDraw(
+    connection: Orca,
+    farmId: OrcaFarmConfig,
+    keypair: Keypair,
+) {
+    const farm = connection.getFarm(farmId);
+    const farmBalance = await farm.getFarmBalance(keypair.publicKey); // Withdraw the entire balance
+    const farmWithdrawPayload = await farm.withdraw(keypair, farmBalance);
+    const farmWithdrawTxId = await farmWithdrawPayload.execute();
+    console.log(`Farm withdrawn ${farmWithdrawTxId} \n`);
 }
