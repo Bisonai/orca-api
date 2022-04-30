@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, HttpCode } from '@nestjs/common';
 import {
     getPoolName,
     getPoolAddress,
@@ -18,9 +18,10 @@ import { SwapService } from './swap.service';
 
 @Controller('swap')
 export class SwapController {
-    constructor(private readonly swapService: SwapService) {}
+    constructor(private readonly swapService: SwapService) { }
 
     @Post()
+    @HttpCode(200)
     async balance(@Body() dto: SwapDto) {
         const poolName = getPoolName(dto.tokenFrom, dto.tokenTo);
 

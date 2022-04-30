@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, HttpCode } from '@nestjs/common';
 import { PublicKey } from '@solana/web3.js';
 import { keypairFromBs58, getConnection } from '@bisonai-orca/solana-utils';
 import { getPoolFromTokens } from '@bisonai-orca/pool';
@@ -14,9 +14,10 @@ import { BalanceDto } from './dto/balance.dto';
 
 @Controller('pool')
 export class PoolController {
-    constructor(private readonly poolService: PoolService) {}
+    constructor(private readonly poolService: PoolService) { }
 
     @Post('balance')
+    @HttpCode(200)
     async balance(@Body() dto: BalanceDto) {
         return this.poolService.balance({
             network: dto.network,
@@ -27,6 +28,7 @@ export class PoolController {
     }
 
     @Post('deposit')
+    @HttpCode(200)
     async deposit(@Body() dto: DepositDto) {
         const connection = getConnection(dto.network);
 
@@ -62,6 +64,7 @@ export class PoolController {
     }
 
     @Post('withdraw')
+    @HttpCode(200)
     async withdraw(@Body() dto: WithdrawDto) {
         try {
             const connection = getConnection(dto.network);
