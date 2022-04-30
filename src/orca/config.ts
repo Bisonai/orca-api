@@ -7,4 +7,5 @@ export const CONFIG = {
     WITHDRAW_FEE: new Decimal(0.000_015),
     POOL_DEPOSIT_FEE: new Decimal(0.000_015),
     SLIPPAGE: new Decimal(0.01),
+    ALLOWED_NETWORKS: ['mainnet-beta', 'devnet'],
 } as const;
