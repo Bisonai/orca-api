@@ -1,4 +1,4 @@
-import { getOrca, Orca, OrcaPool, OrcaFarm, OrcaFarmConfig } from '@orca-so/sdk';
+import { TransactionPayload, getOrca, OrcaPool, OrcaFarm, OrcaFarmConfig } from '@orca-so/sdk';
 import { Keypair } from '@solana/web3.js';
 import { getConnection, getNetwork } from '@bisonai-orca/solana-utils';
 
@@ -77,19 +77,21 @@ export async function farmDeposit(
     farm: OrcaFarm,
     pool: OrcaPool,
     keypair: Keypair,
-) {
+): Promise<TransactionPayload> {
     // Note 1: for double dip, repeat step 5 but with the double dip farm
     // Note 2: to harvest reward, orcaSolFarm.harvest(owner)
     // Note 3: to get harvestable reward amount, orcaSolFarm.getHarvestableAmount(owner.publicKey)
     const lpBalance = await pool.getLPBalance(keypair.publicKey);
+    // TODO use `baseTokenAmount`
     return await farm.deposit(keypair, lpBalance);
 }
 
 export async function farmWithdraw(
     farm: OrcaFarm,
     keypair: Keypair,
-) {
+): Promise<TransactionPayload> {
     // Withdraw the entire balance
     const farmBalance = await farm.getFarmBalance(keypair.publicKey);
+    // TODO use `baseTokenAmount`
     return await farm.withdraw(keypair, farmBalance);
 }
