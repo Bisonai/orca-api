@@ -8,9 +8,9 @@ import {
     alignPoolTokensAndAmounts,
 } from '@bisonai-orca/orca-utils';
 import { PoolService } from './pool.service';
-import { WithdrawDto } from './dto/withdraw.dto';
-import { DepositDto } from './dto/deposit.dto';
-import { BalanceDto } from './dto/balance.dto';
+import { PoolWithdrawDto } from './dto/withdraw.dto';
+import { PoolDepositDto } from './dto/deposit.dto';
+import { PoolBalanceDto } from './dto/balance.dto';
 
 @Controller('pool')
 export class PoolController {
@@ -24,7 +24,7 @@ export class PoolController {
 
     @Post('balance')
     @HttpCode(200)
-    async balance(@Body() dto: BalanceDto) {
+    async balance(@Body() dto: PoolBalanceDto) {
         return this.poolService.balance({
             network: dto.network,
             tokenA: dto.tokenA,
@@ -35,7 +35,7 @@ export class PoolController {
 
     @Post('deposit')
     @HttpCode(200)
-    async deposit(@Body() dto: DepositDto) {
+    async deposit(@Body() dto: PoolDepositDto) {
         const connection = getConnection(dto.network);
 
         // FIXME: move outside of the execution REST API
@@ -71,7 +71,7 @@ export class PoolController {
 
     @Post('withdraw')
     @HttpCode(200)
-    async withdraw(@Body() dto: WithdrawDto) {
+    async withdraw(@Body() dto: PoolWithdrawDto) {
         try {
             const connection = getConnection(dto.network);
 

@@ -2,7 +2,7 @@ import { IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { CONFIG } from '@bisonai-orca/config';
 
-export class BalanceDto {
+export class PoolBalanceDto {
     @IsNotEmpty()
     @ApiProperty({ enum: CONFIG.ALLOWED_NETWORKS })
     network: string;
