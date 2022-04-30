@@ -24,7 +24,7 @@ export class FarmController {
             dto.farmType,
         );
         const publicKey = new PublicKey(dto.publicKey);
-        return this.farmService.balance({
+        return await this.farmService.balance({
             farm,
             publicKey,
         });
