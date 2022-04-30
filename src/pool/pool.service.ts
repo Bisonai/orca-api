@@ -81,9 +81,8 @@ export class PoolService {
 
         if (!isDepositedPool(withdrawQuote)) {
             throw new BadRequestException({
-                desription: `Pool with tokens [${
-                    i.pool.getTokenA().tag
-                }] and [${i.pool.getTokenB().tag}] has nothing to withdraw.`,
+                desription: `Pool with tokens [${i.pool.getTokenA().tag
+                    }] and [${i.pool.getTokenB().tag}] has nothing to withdraw.`,
             });
         }
 
