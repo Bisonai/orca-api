@@ -9,6 +9,8 @@ import { TokenController } from './token/token.controller';
 import { TokenService } from './token/token.service';
 import { SwapController } from './swap/swap.controller';
 import { SwapService } from './swap/swap.service';
+import { FarmController } from './farm/farm.controller';
+import { FarmService } from './farm/farm.service';
 
 @Module({
     imports: [],
@@ -18,6 +20,7 @@ import { SwapService } from './swap/swap.service';
         PortfolioController,
         TokenController,
         SwapController,
+        FarmController,
     ],
     providers: [
         AppService,
@@ -25,6 +28,7 @@ import { SwapService } from './swap/swap.service';
         PortfolioService,
         TokenService,
         SwapService,
+        FarmService,
     ],
 })
 export class AppModule {}

@@ -1,7 +1,7 @@
 import { Orca, OrcaPool, OrcaFarmConfig } from '@orca-so/sdk';
 import { Keypair } from '@solana/web3.js';
 
-function getFarms(): string[] {
+export function getFarms(): string[] {
     return Object.keys(OrcaFarmConfig);
 }
 
