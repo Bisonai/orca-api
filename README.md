@@ -1,6 +1,6 @@
 # Orca API
 
-Orca API is a REST API server that defines a user-friendly interface to [Orca SDK](https://github.com/orca-so/typescript-sdk).
+Orca API is a REST API server that defines a user-friendly interface for [Orca SDK](https://github.com/orca-so/typescript-sdk).
 The Orca SDK contains a set of simple-to-use APIs to allow developers to integrate with Orca's decentralized exchange platform.
 
 ## Installation
@@ -41,55 +41,55 @@ npm run test:cov
 
 All endpoints with detailed parameters and responses can be found at http://0.0.0.0:3000/docs/.
 
-## Pools
+### Pools
 
-### `/pool`
+#### `/pool`
 
 List all Orca pools.
 
-### `/pool/balance`
+#### `/pool/balance`
 
 Gauge funds allocated in designated pool.
 
-### `/pool/deposit`
+#### `/pool/deposit`
 
 Deposit funds to designated pool.
 
-### `/pool/withdraw`
+#### `/pool/withdraw`
 
 Withdraw funds from designated pool.
 
-## Farms
+### Farms
 
-### `/farm`
+#### `/farm`
 
 List all Orca farms.
 
-### `/farm/balance`
+#### `/farm/balance`
 
 Gauge funds allocated in designated farm.
 
-### `/farm/deposit`
+#### `/farm/deposit`
 
 Deposit funds to designated farm.
 
-### `/farm/withdraw`
+#### `/farm/withdraw`
 
 Withdraw funds from designated farm.
 
 ### Swap
 
-### `/swap`
+#### `/swap`
 
 Swap tokens.
 
 ### Others
 
-### `/portfolio`
+#### `/portfolio`
 
 List account's portfolio.
 
-### `/token`
+#### `/token`
 
 List all tokens traded at Orca.
 
