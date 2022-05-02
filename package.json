@@ -1,8 +1,8 @@
 {
-    "name": "orca-api-nest",
+    "name": "orca-api",
     "version": "0.0.1",
-    "description": "",
-    "author": "",
+    "description": "REST API server that defines a user-friendly interface for Orca SDK.",
+    "author": "Bisonai Inc.",
     "private": true,
     "license": "Apache License 2.0",
     "scripts": {
